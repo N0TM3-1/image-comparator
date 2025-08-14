@@ -1,1 +1,7 @@
+__pycache__/
 .venv/
+images/
+
+
+.temp_rotated.jpg
+fails.log

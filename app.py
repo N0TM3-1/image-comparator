@@ -45,7 +45,7 @@ def compare_hash_sets(hashes1, hashes2):
                     return 0
     return min_dist
 
-def orb_feature_match(img_path1, img_path2, min_matches=10):
+def orb_feature_match(img_path1, img_path2, min_matches=5):
     """
     Use ORB to detect and match keypoints between two images.
     Returns True if enough good matches are found.
@@ -81,6 +81,16 @@ def compare_orb_tokens(token1, token2, min_good_matches=10):
     good_matches = [m for m in matches if m.distance < 50]
     print(f"ORB good matches: {len(good_matches)}")
     return len(good_matches) >= min_good_matches
+
+def orb_token(image_path):
+    """Generate ORB descriptors for a scaled 128x128 grayscale image as a token."""
+    img = cv2.imread(image_path, cv2.IMREAD_GRAYSCALE)
+    if img is None:
+        raise FileNotFoundError(f"Image not found: {image_path}")
+    img = cv2.resize(img, (128, 128), interpolation=cv2.INTER_AREA)
+    orb = cv2.ORB_create()
+    kp, des = orb.detectAndCompute(img, None)
+    return des
 
 if __name__ == "__main__":
     hashes1 = compute_rotation_hashes("image1.jpg")
