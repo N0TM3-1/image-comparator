@@ -2,6 +2,7 @@
 import cv2
 from PIL import Image
 import imagehash
+import numpy as np
 
 def canny_128(image_path):
     """Load image, grayscale, Canny edge detect, resize to 128x128."""
@@ -44,8 +45,49 @@ def compare_hash_sets(hashes1, hashes2):
                     return 0
     return min_dist
 
+def orb_feature_match(img_path1, img_path2, min_matches=10):
+    """
+    Use ORB to detect and match keypoints between two images.
+    Returns True if enough good matches are found.
+    """
+    img1 = cv2.imread(img_path1, cv2.IMREAD_GRAYSCALE)
+    img2 = cv2.imread(img_path2, cv2.IMREAD_GRAYSCALE)
+    if img1 is None or img2 is None:
+        raise FileNotFoundError("One or both images not found.")
+
+    orb = cv2.ORB_create()
+    kp1, des1 = orb.detectAndCompute(img1, None)
+    kp2, des2 = orb.detectAndCompute(img2, None)
+
+    if des1 is None or des2 is None:
+        return False
+
+    bf = cv2.BFMatcher(cv2.NORM_HAMMING, crossCheck=True)
+    matches = bf.match(des1, des2)
+    good_matches = [m for m in matches if m.distance < 50]
+
+    print(f"ORB good matches: {len(good_matches)}")
+    return len(good_matches) >= min_matches
+
+def compare_orb_tokens(token1, token2, min_good_matches=10):
+    """
+    Compare two ORB descriptor sets (tokens).
+    Returns True if enough good matches are found, indicating one image may be a crop of the other.
+    """
+    if token1 is None or token2 is None:
+        return False
+    bf = cv2.BFMatcher(cv2.NORM_HAMMING, crossCheck=True)
+    matches = bf.match(token1, token2)
+    good_matches = [m for m in matches if m.distance < 50]
+    print(f"ORB good matches: {len(good_matches)}")
+    return len(good_matches) >= min_good_matches
+
 if __name__ == "__main__":
     hashes1 = compute_rotation_hashes("image1.jpg")
     hashes2 = compute_rotation_hashes("image2.jpg")
     dist = compare_hash_sets(hashes1, hashes2)
     print(f"Minimum Hamming distance between images: {dist}")
+
+    # ORB feature matching for zoom/crop detection
+    is_zoomed_or_cropped = orb_feature_match("image1.jpg", "image2.jpg")
+    print(f"Zoomed or cropped image detected by ORB: {is_zoomed_or_cropped}")
