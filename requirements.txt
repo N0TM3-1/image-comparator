@@ -2,3 +2,4 @@ opencv-python
 ImageHash
 numpy
 Pillow
+qdrant_client
